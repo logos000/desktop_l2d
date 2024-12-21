@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Live2D Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #live2d-canvas {
+            width: 800px;
+            height: 800px;
+            position: fixed;
+            right: 0;
+            bottom: 0;
+        }
+        #control-panel {
+            position: fixed;
+            left: 10px;
+            top: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .button-group {
+            margin-bottom: 10px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .group-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            border-radius: 3px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="control-panel">
+        <div class="button-group">
+            <div class="group-title">动作</div>
+            <button onclick="playMotion('motions/jingya.motion3.json')">惊讶</button>
+            <button onclick="playMotion('motions/kaixin.motion3.json')">开心</button>
+            <button onclick="playMotion('motions/shengqi.motion3.json')">生气</button>
+            <button onclick="playMotion('motions/shuijiao.motion3.json')">睡觉</button>
+            <button onclick="playMotion('motions/wink.motion3.json')">眨眼</button>
+            <button onclick="playMotion('motions/yaotou.motion3.json')">摇头</button>
+        </div>
+        <div class="button-group">
+            <div class="group-title">表情</div>
+            <button onclick="playExpression('expression/axy.exp3.json')">暗下眼</button>
+            <button onclick="playExpression('expression/heilian.exp3.json')">黑脸</button>
+            <button onclick="playExpression('expression/kuku.exp3.json')">哭泣</button>
+            <button onclick="playExpression('expression/lianhong.exp3.json')">脸红</button>
+            <button onclick="playExpression('expression/shengqi.exp3.json')">生气</button>
+        </div>
+    </div>
+    
+    <canvas id="live2d-canvas"></canvas>
+
+    <!-- Live2D SDK -->
+    <script src="/live2d/Core/live2dcubismcore.js"></script>
+    <script src="/live2d/Framework/dist/live2dcubismframework.js"></script>
+    <script src="/live2d/Framework/dist/cubismrenderer.js"></script>
+    
+    <script>
+        let app = null;
+        let model = null;
+
+        window.onload = async function() {
+            // 初始化Live2D
+            const canvas = document.getElementById('live2d-canvas');
+            
+            // 设置画布大小
+            canvas.width = 800;
+            canvas.height = 800;
+            
+            const gl = canvas.getContext('webgl');
+            
+            if (!gl) {
+                alert('无法初始化WebGL。您的浏览器可能不支持它。');
+                return;
+            }
+
+            // 模型路径
+            const modelPath = '/models/fense.model3.json';
+            
+            try {
+                // 初始化Live2D Cubism Framework
+                await LIVE2DCUBISMFRAMEWORK.startUp({
+                    logFunction: console.log,
+                    errorFunction: console.error
+                });
+                
+                // 创建应用实例
+                app = new LIVE2DCUBISMFRAMEWORK.Application();
+                app.resized = true;
+                
+                // 初始化GL上下文
+                app.initialize(gl);
+
+                // 加载模型
+                model = await app.loadModel(modelPath);
+                
+                // 开始渲染循环
+                requestAnimationFrame(animate);
+            } catch (error) {
+                console.error('模型加载失败:', error);
+            }
+        };
+
+        function animate() {
+            if (app != null) {
+                app.update();
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // 播放动作
+        async function playMotion(motionFile) {
+            if (model) {
+                try {
+                    const response = await fetch('/models/' + motionFile);
+                    const motionData = await response.json();
+                    model.startMotion(motionData);
+                } catch (error) {
+                    console.error('动作加载失败:', error);
+                }
+            }
+        }
+
+        // 播放表情
+        async function playExpression(expressionFile) {
+            if (model) {
+                try {
+                    const response = await fetch('/models/' + expressionFile);
+                    const expressionData = await response.json();
+                    model.setExpression(expressionData);
+                } catch (error) {
+                    console.error('表情加载失败:', error);
+                }
+            }
+        }
+    </script>
+</body>
+</html> 

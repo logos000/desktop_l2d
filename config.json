@@ -1,0 +1,13 @@
+{
+    "asr": {
+        "stream_mode": true,
+        "sample_rate": 16000
+    },
+    "tts": {
+        "base_url": "http://127.0.0.1:9880",
+        "ref_audio_path": "E:/APPLICATIONS/GPT-SoVITS/refer/skadi.wav",
+        "text_split_method": "cut5",
+        "batch_size": 1,
+        "speed_factor": 1.0
+    }
+}

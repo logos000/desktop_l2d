@@ -1,0 +1,22 @@
+PySide6 
+requests==2.31.0
+python-dotenv==1.0.0
+sounddevice==0.4.6
+scipy==1.11.4
+openai
+funasr 
+modelscope
+addict 
+datasets==2.16.0 
+simplejson 
+sortedcontainers 
+pydub 
+onnx 
+onnxconverter_common
+live2d-py
+# torch 
+# torchvision 
+# torchaudio 
+# --index-url https://download.pytorch.org/whl/cu118
+flask==3.0.0
+websockets==12.0
