@@ -461,7 +461,7 @@ class AudioRecorder(QObject):
                     else:
                         silence_chunks += 1
                     
-                    # 如果启用了实时识别且积累了足够的数据进行识别
+                    # ��果启用了实时识别且积累了足够的数据进行识别
                     if self.enable_realtime_asr and self.streaming_model is not None and len(accumulated_chunks) >= self.ACCUMULATION_CHUNKS:
                         audio_data = np.concatenate(accumulated_chunks)
                         
@@ -483,7 +483,7 @@ class AudioRecorder(QObject):
                                     self.partial_result.emit(text)
                         except Exception as e:
                             print(f"流式识别错误: {str(e)}")
-                            # 如果出现错误，尝试重新加载模型
+                            # 如果出现错误，试重新加载模型
                             if "NoneType" in str(e):
                                 print("尝试重新加载流式识别模型...")
                                 try:
@@ -568,7 +568,7 @@ class MainWindow(QMainWindow):
         # 设置异步助手
         self.tts_client.set_async_helper(self.async_helper)
         
-        # 加载配置
+        # 加载配��
         self.load_config()
         
         # 初始化VTS连接
@@ -611,7 +611,7 @@ class MainWindow(QMainWindow):
         volume_layout.addWidget(self.volume_bar)
         chat_layout.addLayout(volume_layout)
         
-        # 开始对话按钮
+        # ���始对话按钮
         self.record_button = QPushButton("开始对话")
         self.record_button.clicked.connect(self.toggle_recording)
         chat_layout.addWidget(self.record_button)
@@ -681,7 +681,7 @@ class MainWindow(QMainWindow):
         
         test_layout.addWidget(vts_test_group)
         
-        # 测试结果区域
+        # 测试结果区
         self.test_display = QTextEdit()
         self.test_display.setReadOnly(True)
         test_layout.addWidget(self.test_display)
@@ -710,6 +710,12 @@ class MainWindow(QMainWindow):
         self.model_name_input = QLineEdit()
         self.model_name_input.setText("gpt-4o")  # 设置默认值
         api_form.addRow("GPT模型:", self.model_name_input)
+        
+        # 添加系统提示词设置
+        self.system_prompt_input = QTextEdit()
+        self.system_prompt_input.setPlaceholderText("在这里输入系统提示词...")
+        self.system_prompt_input.setMaximumHeight(100)
+        api_form.addRow("系统提示词:", self.system_prompt_input)
         
         config_layout.addWidget(api_group)
         
@@ -816,7 +822,7 @@ class MainWindow(QMainWindow):
         try:
             success, error = await self.tts_client.text_to_speech(sentence, task_id=self.current_response_id)
             if not success:
-                print(f"语音合成失败: {error}")
+                print(f"音合成失败: {error}")
         except Exception as e:
             print(f"处理TTS请求时出错: {str(e)}")
             import traceback
@@ -859,7 +865,8 @@ class MainWindow(QMainWindow):
             'batch_size': self.batch_size_spin.value(),
             'speed_factor': self.speed_factor_spin.value(),
             'enable_realtime_asr': self.enable_realtime_asr.isChecked(),
-            'model_name': self.model_name_input.text()
+            'model_name': self.model_name_input.text(),
+            'system_prompt': self.system_prompt_input.toPlainText()  # 添加系统提示词
         }
         
         # 保存到.env文件
@@ -887,7 +894,8 @@ class MainWindow(QMainWindow):
         self.gpt_client.update_config(
             api_key=config['openai_api_key'],
             base_url=config['openai_base_url'] if config['openai_base_url'] else "https://api.openai.com/v1",
-            model_name=config['model_name']
+            model_name=config['model_name'],
+            system_prompt=config['system_prompt']  # 添加系统提示词
         )
         
         QMessageBox.information(self, "提示", "配置已保存")
@@ -907,6 +915,10 @@ class MainWindow(QMainWindow):
             self.tts_base_url_input.setText(tts_base_url)
             
             self.reference_audio_input.setText(os.getenv('REFERENCE_AUDIO', ''))
+            
+            # 加载系统提示词
+            system_prompt = os.getenv('SYSTEM_PROMPT', '')
+            self.system_prompt_input.setPlainText(system_prompt)
             
             # 加载ASR参数
             energy_threshold = float(os.getenv('ENERGY_THRESHOLD', '0.005'))
@@ -945,7 +957,8 @@ class MainWindow(QMainWindow):
             self.gpt_client.update_config(
                 api_key=os.getenv('OPENAI_API_KEY', ''),
                 base_url=os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
-                model_name=model_name
+                model_name=model_name,
+                system_prompt=os.getenv('SYSTEM_PROMPT', '')  # 添加系统提示词
             )
             
             # 加载实时识别设置
@@ -1025,7 +1038,7 @@ class MainWindow(QMainWindow):
             cursor.insertText("助手: ")
             self.is_assistant_message_started = True
             self.current_assistant_message = cursor.position()
-            # 保���当前文档的结束位置作为助手消息的结束位置
+            # 保存当前文档的结束位置作为助手消息的结束位置
             cursor.movePosition(QTextCursor.MoveOperation.End)
             self.current_assistant_end = cursor.position()
         
@@ -1120,17 +1133,38 @@ class MainWindow(QMainWindow):
     async def init_vts_connection(self):
         """初始化VTS连接"""
         try:
+            print("正在初始化VTS连接...")
+            # 确保TTS客户端已初始化
+            if not hasattr(self, 'tts_client'):
+                self.tts_client = TTSClient()
+                self.tts_client.set_async_helper(self.async_helper)
+            
+            # 初始化VTS连接
             await self.tts_client.init_vts()
-            self.vts_connected = True
-            self.vts_connect_button.setText("断开VTS")
-            self.vts_test_button.setEnabled(True)
-            self.vts_status_label.setText("已连接")
+            
+            # 更新连接状态
+            self.vts_connected = self.tts_client.vts_manager and self.tts_client.vts_manager.is_connected
+            
+            # 更新UI
+            if self.vts_connected:
+                self.vts_connect_button.setText("断开VTS")
+                self.vts_test_button.setEnabled(True)
+                self.vts_status_label.setText("已连接")
+                print("VTS连接成功")
+            else:
+                self.vts_connect_button.setText("连接VTS")
+                self.vts_test_button.setEnabled(False)
+                self.vts_status_label.setText("未连接")
+                print("VTS连接失败")
+                
         except Exception as e:
-            print(f"初始化VTS连接失败: {str(e)}")
+            print(f"初始化VTS连接时出错: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self.vts_connected = False
             self.vts_connect_button.setText("连接VTS")
             self.vts_test_button.setEnabled(False)
-            self.vts_status_label.setText("未连接")
+            self.vts_status_label.setText(f"连接错误: {str(e)}")
 
 if __name__ == '__main__':
     try:

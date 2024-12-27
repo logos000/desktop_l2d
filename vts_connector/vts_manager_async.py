@@ -41,7 +41,11 @@ class VTSManagerAsync:
     async def start(self):
         """启动 VTS 连接"""
         try:
-            self.websocket = await websockets.connect(self.api_url)
+            self.websocket = await websockets.connect(
+                self.api_url,
+                ping_interval=None,  # 禁用 ping 机制
+                ping_timeout=None    # 禁用 ping 超时
+            )
             self.is_connected = True
             if self.on_connection_changed:
                 self.on_connection_changed(True)
@@ -130,7 +134,7 @@ class VTSManagerAsync:
         """保持连接活跃"""
         while True:
             try:
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
                 if self.websocket and self.is_connected:
                     await self._send_request("Statistics")
             except Exception as e:

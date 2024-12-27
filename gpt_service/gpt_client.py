@@ -104,7 +104,7 @@ class GPTClient(QObject):
         )
         
         # 设置系统提示
-        self.system_message = """你是一个友好的中文AI助手。请用简短、自然的中文对话方式回应用户。
+        self.system_message = """你是一个友好的中文AI助手。请用简短、自然的中文对话方��回应用户。
 
 当用户询问关于屏幕内容、查看屏幕、或者需要了解当前界面的情况时，你应该使用 take_screenshot 工具来获取并分析屏幕截图。
 
@@ -473,7 +473,7 @@ class GPTClient(QObject):
             traceback.print_exc()
             self.response_received.emit(error_msg)
     
-    def update_config(self, api_key=None, base_url=None, model_name=None):
+    def update_config(self, api_key=None, base_url=None, model_name=None, system_prompt=None):
         """更新配置"""
         if api_key:
             self.api_key = api_key
@@ -481,8 +481,10 @@ class GPTClient(QObject):
             self.base_url = base_url
         if model_name:
             self.model_name = model_name
-        
-        # 重新初始化 ChatOpenAI
+        if system_prompt:
+            self.system_message = system_prompt
+            
+        # 重新创建ChatOpenAI实例
         self.chat = ChatOpenAI(
             model=self.model_name,
             openai_api_key=self.api_key,
@@ -491,7 +493,7 @@ class GPTClient(QObject):
             callbacks=[self.callback_handler]
         )
         
-        # 重新创建代理
+        # 重新创建提示模板
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", self.system_message),
             MessagesPlaceholder(variable_name="chat_history"),
@@ -499,6 +501,7 @@ class GPTClient(QObject):
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
         
+        # 重新创建代理
         self.agent = create_openai_tools_agent(
             llm=self.chat,
             tools=[screenshot_tool],
